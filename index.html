@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Свободные окна</title>
 <meta name="description" content="Отметьте свободные дни месяца — и получите картинку для сторис.">
 <meta name="theme-color" content="#0B0B0A">
@@ -39,7 +39,7 @@ try { const s = JSON.parse(localStorage.getItem("svobodnye-okna-v1") || "{}"); i
   --ease: cubic-bezier(.2,.7,.1,1); --ease-drawer: cubic-bezier(.32,.72,0,1);
 }
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; background: var(--bg); transition: background .3s; }
+html { -webkit-text-size-adjust: 100%; background: var(--bg); transition: background .3s; overscroll-behavior: none; }
 /* фон — у html, не у body: иначе фон body перекрывает свечение в углу */
 body { margin: 0; min-height: 100dvh; color: var(--ink); font-family: var(--f); font-size: 15px; line-height: 1.45;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation; overscroll-behavior-y: none; }
@@ -48,7 +48,7 @@ body::before { content: ""; position: fixed; z-index: 40; inset: 0 0 auto; heigh
 body::after { content: ""; position: fixed; z-index: -1; top: -30vw; right: -30vw; width: 90vw; height: 90vw; pointer-events: none;
   background: radial-gradient(closest-side, color-mix(in srgb, var(--ac) 16%, transparent), transparent); }
 button, input { font: inherit; color: inherit; }
-button { -webkit-user-select: none; user-select: none; cursor: pointer; }
+button { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
 svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
@@ -133,7 +133,7 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
 .toast.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 .toast button { height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: none; color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
-@media (hover: hover) { .link-btn:hover, .ic-btn:not(:disabled):hover { background: var(--tile-hi); } }
+@media (hover: hover) and (pointer: fine) { .link-btn:hover, .ic-btn:not(:disabled):hover { background: var(--tile-hi); } }
 </style>
 </head>
 <body>
