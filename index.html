@@ -28,15 +28,14 @@ try { const s = JSON.parse(localStorage.getItem("svobodnye-okna-v1") || "{}"); i
 </script>
 <style>
 /* Свободные окна — приложение для мастеров студии: отметить свободные дни месяца и выложить картинку в сторис.
-   Всё хранится только на телефоне мастера (localStorage). Цвета фона и акцента — свои, меняются в настройках. */
+   Три шага на одном экране: дни → картинка → отправить. Всё хранится только на телефоне мастера (localStorage). */
 :root {
   --bg: #0B0B0A; --ink: #EEEDE9; --ac: #F37021; --on-ac: #121211; --ac-txt: #FFB07A;
   --ink-2: rgba(238,237,233,.78); --muted: rgba(238,237,233,.62); --faint: rgba(238,237,233,.38);
   --card: rgba(238,237,233,.045); --tile: rgba(238,237,233,.07); --tile-hi: rgba(238,237,233,.12); --line: rgba(238,237,233,.10);
-  --ac-soft: rgba(243,112,33,.14); --ac-grad: linear-gradient(180deg, #FF8A45, #F37021);
+  --ac-grad: linear-gradient(180deg, #FF8A45, #F37021);
   --f: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --serif: "Literata", Georgia, "Times New Roman", serif;
-  --ease: cubic-bezier(.2,.7,.1,1); --ease-drawer: cubic-bezier(.32,.72,0,1);
+  --ease: cubic-bezier(.2,.7,.1,1);
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; background: var(--bg); transition: background .3s; overscroll-behavior: none; }
@@ -47,20 +46,21 @@ body { margin: 0; min-height: 100dvh; color: var(--ink); font-family: var(--f); 
 body::before { content: ""; position: fixed; z-index: 40; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--bg); pointer-events: none; }
 body::after { content: ""; position: fixed; z-index: -1; top: -30vw; right: -30vw; width: 90vw; height: 90vw; pointer-events: none;
   background: radial-gradient(closest-side, color-mix(in srgb, var(--ac) 16%, transparent), transparent); }
-button, input { font: inherit; color: inherit; }
-button { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; cursor: pointer; }
+button, input, summary { font: inherit; color: inherit; }
+button, summary { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
 svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
-.app { max-width: 520px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px); display: grid; gap: 14px; }
-.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 2px 2px; }
-.top h1 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -.03em; line-height: 1.1; }
-.top p { margin: 3px 0 0; color: var(--muted); font-size: 13.5px; }
+.app { max-width: 520px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px calc(env(safe-area-inset-bottom, 0px) + 150px); display: grid; gap: 14px; }
+.top h1 { margin: 4px 2px 0; font-size: 26px; font-weight: 600; letter-spacing: -.03em; line-height: 1.1; }
 .ic-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--tile); color: var(--ink-2); flex: none; transition: transform .15s var(--ease); }
 .ic-btn:active { transform: scale(.92); }
 .ic-btn:disabled { opacity: .3; cursor: default; }
 
 .card { background: var(--card); border-radius: 26px; padding: 18px 16px; display: grid; gap: 14px; box-shadow: inset 0 0 0 1px var(--line); }
+.step { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
+.step i { font-style: normal; width: 26px; height: 26px; border-radius: 50%; background: var(--ac); color: var(--on-ac); font-size: 14px; display: grid; place-items: center; flex: none; }
+
 .month-sw { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .month-sw b { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
 .month-sw b::first-letter { text-transform: uppercase; }
@@ -77,49 +77,32 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
 .cal button.today { box-shadow: inset 0 0 0 2px var(--ink-2); }
 .cal button.free.today { box-shadow: inset 0 0 0 2px var(--on-ac); }
 .cal button:disabled { background: none; color: var(--faint); opacity: .6; cursor: default; }
-.count-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; margin-top: -4px; }
-.count { display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 14px; }
+.count { display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 14px; min-height: 20px; }
 .count::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--ac); flex: none; }
 .count.empty::before { background: var(--faint); }
-.link-btn { height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--tile); color: var(--ink); font-size: 14px; font-weight: 600; white-space: nowrap; transition: transform .15s var(--ease); }
-.link-btn:active { transform: scale(.95); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: -2px; }
+.chip { height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--tile); color: var(--ink); font-size: 14px; font-weight: 600; white-space: nowrap; transition: transform .15s var(--ease); }
+.chip:active { transform: scale(.95); }
+.chip.quiet { background: none; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
 
 .field { display: grid; gap: 6px; }
 .field > span { font-size: 13px; color: var(--muted); }
 .field input[type=text] { width: 100%; height: 48px; padding: 0 14px; border-radius: 14px; border: 0; background: var(--tile); font-size: 16px; box-shadow: inset 0 0 0 1px var(--line); -webkit-appearance: none; appearance: none; }
 .field input::placeholder { color: var(--faint); }
 
-.btn-main { height: 54px; border: 0; border-radius: 999px; background: var(--ac-grad); color: var(--on-ac); font-weight: 600; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 8px;
-  box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--ac) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.3); transition: transform .15s var(--ease); }
-.btn-main:active { transform: scale(.97); }
-.btn-main:disabled { background: var(--tile); color: var(--faint); box-shadow: none; cursor: default; transform: none; }
-.hint { margin: -6px 0 0; font-size: 13px; color: var(--muted); text-align: center; text-wrap: balance; }
+.story-prev { width: 100%; max-width: 280px; aspect-ratio: 9 / 16; border-radius: 22px; display: block; margin: 0 auto; background: var(--bg); box-shadow: 0 22px 44px -28px rgba(0,0,0,.9), 0 0 0 1px var(--line); object-fit: cover; }
 
-.prev-card h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink-2); }
-.story-prev { width: 100%; max-width: 300px; aspect-ratio: 9 / 16; border-radius: 22px; display: block; margin: 0 auto; background: var(--bg); box-shadow: 0 22px 44px -28px rgba(0,0,0,.9), 0 0 0 1px var(--line); object-fit: cover; }
-
-/* шторка настроек */
-.scrim { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: opacity .3s; }
-.scrim.on { opacity: 1; pointer-events: auto; }
-.sheet { position: fixed; z-index: 51; left: 0; right: 0; bottom: 0; max-width: 520px; margin: 0 auto; max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain;
-  background: var(--sheet); border-radius: 28px 28px 0 0; padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 20px); display: grid; gap: 16px;
-  transform: translateY(105%); transition: transform .42s var(--ease-drawer); box-shadow: 0 -1px 0 var(--line); }
-.sheet.on { transform: none; }
-.sheet.drag { transition: none; }
-.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--tile-hi); margin: 0 auto 2px; }
-.sheet-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.sheet h2 { margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -.02em; }
-/* «Готово» — наверху, как в шторках айфона: всегда видно, листать не нужно */
-.done-btn { height: 40px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--ac-grad); color: var(--on-ac); font-weight: 600; font-size: 15px; flex: none; transition: transform .15s var(--ease); }
-.done-btn:active { transform: scale(.95); }
-.sheet .lead { margin: -10px 0 0; color: var(--muted); font-size: 13.5px; }
-.sub-h { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: -6px; }
+.sub-h { font-size: 13px; color: var(--muted); margin-bottom: -6px; }
 .themes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.themes button { aspect-ratio: 1; border-radius: 18px; border: 0; position: relative; display: grid; place-items: center; box-shadow: inset 0 0 0 1px rgba(128,128,128,.25); transition: transform .15s var(--ease); }
+.themes button { height: 60px; border-radius: 16px; border: 0; position: relative; display: grid; place-items: start center; padding-top: 10px; box-shadow: inset 0 0 0 1px rgba(128,128,128,.25); transition: transform .15s var(--ease); }
 .themes button:active { transform: scale(.94); }
-.themes button span { width: 42%; aspect-ratio: 1; border-radius: 50%; }
-.themes button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--sheet), 0 0 0 4px var(--ink); }
-.themes small { position: absolute; bottom: 5px; left: 0; right: 0; text-align: center; font-size: 10.5px; font-weight: 600; }
+.themes button span { width: 20px; height: 20px; border-radius: 50%; }
+.themes button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
+.themes small { position: absolute; bottom: 7px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: 600; }
+details.own summary { list-style: none; font-size: 14px; color: var(--ink-2); padding: 8px 0; display: flex; align-items: center; gap: 6px; }
+details.own summary::-webkit-details-marker { display: none; }
+details.own summary::after { content: "›"; transition: transform .2s var(--ease); font-size: 18px; line-height: 1; }
+details.own[open] summary::after { transform: rotate(90deg); }
 .pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .pick label { display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 12px; border-radius: 16px; background: var(--tile); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; font-size: 14px; }
 .pick input[type=color] { width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; flex: none; -webkit-appearance: none; appearance: none; }
@@ -127,18 +110,26 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
 .pick input[type=color]::-webkit-color-swatch { border: 1px solid rgba(128,128,128,.4); border-radius: 50%; }
 .pick input[type=color]::-moz-color-swatch { border: 1px solid rgba(128,128,128,.4); border-radius: 50%; }
 
-.toast { position: fixed; z-index: 60; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+/* нижняя панель: кнопка «Отправить» всегда под пальцем, не надо листать */
+.bar { position: fixed; z-index: 45; left: 0; right: 0; bottom: 0; padding: 22px 16px calc(env(safe-area-inset-bottom, 0px) + 12px); background: linear-gradient(to top, var(--bg) 62%, transparent); pointer-events: none; }
+.bar > div { max-width: 520px; margin: 0 auto; display: grid; gap: 6px; pointer-events: auto; }
+.bar p { margin: 0; text-align: center; font-size: 12.5px; color: var(--muted); }
+.btn-main { height: 56px; border: 0; border-radius: 999px; background: var(--ac-grad); color: var(--on-ac); font-weight: 600; font-size: 17px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--ac) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.3); transition: transform .15s var(--ease); }
+.btn-main:active { transform: scale(.97); }
+.btn-main:disabled { background: var(--tile-hi); color: var(--muted); box-shadow: none; cursor: default; transform: none; }
+
+.toast { position: fixed; z-index: 60; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 104px); transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
   background: var(--ink); color: var(--bg); padding: 0 8px 0 18px; min-height: 44px; display: flex; align-items: center; gap: 4px; border-radius: 999px; font-size: 14px; font-weight: 500; white-space: nowrap; transition: opacity .25s, transform .3s var(--ease); }
 .toast:not(:has(button)) { padding-right: 18px; }
 .toast.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 .toast button { height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: none; color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
-@media (hover: hover) and (pointer: fine) { .link-btn:hover, .ic-btn:not(:disabled):hover { background: var(--tile-hi); } }
+@media (hover: hover) and (pointer: fine) { .chip:hover, .ic-btn:not(:disabled):hover { background: var(--tile-hi); } }
 </style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
   <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/></symbol>
@@ -147,43 +138,46 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
 
 <main class="app">
   <header class="top">
-    <div><h1>Свободные окна</h1><p id="who">Отметьте дни — получите сторис</p></div>
-    <button class="ic-btn" type="button" id="openSet" aria-label="Настройки: имя и цвета"><svg class="i"><use href="#i-gear"/></svg></button>
+    <h1>Свободные окна</h1>
   </header>
 
   <section class="card">
+    <h2 class="step"><i>1</i>Коснитесь свободных дней</h2>
     <div class="month-sw">
       <button class="ic-btn" type="button" id="mPrev" aria-label="Предыдущий месяц"><svg class="i"><use href="#i-left"/></svg></button>
       <b id="mName"></b>
       <button class="ic-btn" type="button" id="mNext" aria-label="Следующий месяц"><svg class="i"><use href="#i-right"/></svg></button>
     </div>
     <div class="cal" id="cal"></div>
-    <div class="count-row"><span class="count" id="count"></span><button class="link-btn" type="button" id="allBtn"></button></div>
-    <button class="btn-main" type="button" id="shareStory"><svg class="i" id="shareIc"><use href="#i-share"/></svg><span id="shareLbl">Отправить в сторис</span></button>
-    <p class="hint" id="shareHint">Instagram, Telegram или «Сохранить изображение»</p>
+    <div class="count" id="count"></div>
+    <div class="chips">
+      <button class="chip" type="button" data-set="all">Все дни</button>
+      <button class="chip" type="button" data-set="week">Будни</button>
+      <button class="chip" type="button" data-set="end">Выходные</button>
+      <button class="chip quiet" type="button" data-set="none" id="chipNone">Сбросить</button>
+    </div>
   </section>
 
-  <section class="card prev-card">
-    <h2>Картинка для сторис</h2>
+  <section class="card">
+    <h2 class="step"><i>2</i>Так выглядит картинка</h2>
     <img class="story-prev" id="storyImg" alt="Картинка со свободными датами для сторис">
+    <label class="field"><span>Подпись на картинке — можно изменить</span><input id="capt" type="text" maxlength="60" placeholder="Пишите в личку — подберём время" enterkeyhint="done"></label>
+    <div class="sub-h">Цвет картинки</div>
+    <div class="themes" id="themes"></div>
+    <details class="own">
+      <summary>Свои цвета</summary>
+      <div class="pick">
+        <label>Фон <input type="color" id="cBg"></label>
+        <label>Акцент <input type="color" id="cAc"></label>
+      </div>
+    </details>
   </section>
 </main>
 
-<div class="scrim" id="scrim"></div>
-<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="setH" inert>
-  <div class="grab"></div>
-  <div class="sheet-h"><h2 id="setH">Настройки</h2><button class="done-btn" type="button" id="closeSet">Готово</button></div>
-  <p class="lead">Имя и ник будут внизу картинки. Всё хранится только на этом телефоне.</p>
-  <label class="field"><span>Имя</span><input id="sName" type="text" maxlength="40" placeholder="Например, Анна" autocomplete="name" autocapitalize="words" enterkeyhint="next"></label>
-  <label class="field"><span>Где вам писать</span><input id="sContact" type="text" maxlength="40" placeholder="@ник или телефон" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="next"></label>
-  <label class="field"><span>Подпись на картинке</span><input id="capt" type="text" maxlength="60" placeholder="Пишите в личку — подберём время" enterkeyhint="done"></label>
-  <div class="sub-h">Цвета</div>
-  <div class="themes" id="themes"></div>
-  <div class="pick">
-    <label>Фон <input type="color" id="cBg"></label>
-    <label>Акцент <input type="color" id="cAc"></label>
-  </div>
-</section>
+<div class="bar"><div>
+  <p id="shareHint">Откроется меню — выберите Instagram и «Истории»</p>
+  <button class="btn-main" type="button" id="shareStory"><svg class="i" id="shareIc"><use href="#i-share"/></svg><span id="shareLbl">Отправить в сторис</span></button>
+</div></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -191,6 +185,7 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
   const $ = id => document.getElementById(id);
   const MONTHS = ["январь","февраль","март","апрель","май","июнь","июль","август","сентябрь","октябрь","ноябрь","декабрь"];
   const WD = ["пн","вт","ср","чт","пт","сб","вс"];
+  const DEF_CAP = "Пишите в личку — подберём время";
   const THEMES = [
     { n: "Уголь", bg: "#0B0B0A", ac: "#F37021" },
     { n: "Ночь", bg: "#0B1020", ac: "#6EA8FF" },
@@ -206,9 +201,9 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
 
   // ---------- хранилище: только этот телефон ----------
   const KEY = "svobodnye-okna-v1";
-  let S = { name: "", contact: "", caption: "", bg: THEMES[0].bg, ac: THEMES[0].ac, free: {} };
+  let S = { caption: "", bg: THEMES[0].bg, ac: THEMES[0].ac, free: {} };
   try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
-  delete S.role;  // поле с родом занятий убрано 05.11
+  delete S.name; delete S.contact; delete S.role;  // имя и ник убраны 05.11: мастер публикует от своего аккаунта
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 
   // ---------- цвета ----------
@@ -225,23 +220,23 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
     // акцентный цвет текста должен читаться на фоне: на тёмном — светлее, на светлом — темнее
     let acTxt = ac; for (let i = 0; i < 6; i++) { const L1 = lum(acTxt), L2 = lum(bg), cr = (Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05); if (cr >= 4.5) break; acTxt = mix(acTxt, light ? "#000000" : "#FFFFFF", .22); }
     P = { bg, ac, ink, onAc, light, acTxt, acTop: mix(ac, "#FFFFFF", .22),
-      ink2: mix(bg, ink, .8), muted: mix(bg, ink, .6), faint: mix(bg, ink, .3), past: mix(bg, ink, .2), sheet: light ? mix(bg, "#FFFFFF", .55) : mix(bg, "#FFFFFF", .06) };
+      ink2: mix(bg, ink, .8), muted: mix(bg, ink, .6), faint: mix(bg, ink, .3), past: mix(bg, ink, .2) };
     const r = document.documentElement.style;
     r.setProperty("--bg", bg); r.setProperty("--ink", ink); r.setProperty("--ac", ac); r.setProperty("--on-ac", onAc); r.setProperty("--ac-txt", acTxt);
     r.setProperty("--ink-2", rgba(ink, .78)); r.setProperty("--muted", rgba(ink, light ? .66 : .62)); r.setProperty("--faint", rgba(ink, .38));
-    r.setProperty("--card", rgba(ink, light ? .05 : .045)); r.setProperty("--tile", rgba(ink, light ? .07 : .07)); r.setProperty("--tile-hi", rgba(ink, .12)); r.setProperty("--line", rgba(ink, .10));
-    r.setProperty("--ac-grad", `linear-gradient(180deg, ${P.acTop}, ${ac})`); r.setProperty("--sheet", P.sheet);
+    r.setProperty("--card", rgba(ink, .045)); r.setProperty("--tile", rgba(ink, .07)); r.setProperty("--tile-hi", rgba(ink, .12)); r.setProperty("--line", rgba(ink, .10));
+    r.setProperty("--ac-grad", `linear-gradient(180deg, ${P.acTop}, ${ac})`);
     document.querySelector('meta[name="theme-color"]').content = bg;
+    document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content = light ? "default" : "black-translucent";
     $("cBg").value = bg; $("cAc").value = ac;
     $("themes").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.bg === bg && b.dataset.ac === ac));
     makeIcon();
   }
-  function makeIcon() {
+  function makeIcon() {  // значок вкладки в цветах мастера; иконка экрана «Домой» — постоянная, icon-180.png
     const c = document.createElement("canvas"); c.width = c.height = 180; const x = c.getContext("2d");
     x.fillStyle = P.bg; x.fillRect(0, 0, 180, 180);
-    const cells = [[0,0,0],[1,0,1],[2,0,0],[0,1,1],[1,1,0],[2,1,1],[0,2,0],[1,2,1],[2,2,0]];
-    cells.forEach(([i, j, on]) => { x.fillStyle = on ? P.ac : rgba(P.ink, .14); x.beginPath(); x.arc(45 + i * 45, 45 + j * 45, 17, 0, Math.PI * 2); x.fill(); });
-    $("favIcon").href = c.toDataURL("image/png");  // значок вкладки — в цветах мастера; иконка экрана «Домой» — постоянная, icon-180.png
+    [[0,0,0],[1,0,1],[2,0,0],[0,1,1],[1,1,0],[2,1,1],[0,2,0],[1,2,1],[2,2,0]].forEach(([i, j, on]) => { x.fillStyle = on ? P.ac : rgba(P.ink, .14); x.beginPath(); x.arc(45 + i * 45, 45 + j * 45, 17, 0, Math.PI * 2); x.fill(); });
+    $("favIcon").href = c.toDataURL("image/png");
   }
   $("themes").innerHTML = THEMES.map(t => `<button type="button" data-bg="${t.bg}" data-ac="${t.ac}" style="background:${t.bg}" aria-label="${t.n}"><span style="background:${t.ac}"></span><small style="color:${lum(t.bg) > .35 ? "#171614" : "#EEEDE9"}">${t.n}</small></button>`).join("");
   $("themes").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.bg = b.dataset.bg; S.ac = b.dataset.ac; save(); palette(); drawStory(); });
@@ -253,15 +248,16 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
   let mOff = 0;
   const curMonth = () => new Date(todayD.getFullYear(), todayD.getMonth() + mOff, 1);
   const mKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
-  // старые месяцы не копим
-  Object.keys(S.free).forEach(k => { if (k < mKey(todayD)) delete S.free[k]; });
-  // в прошедших днях отметок не бывает: показываем только сегодня и дальше
+  const dim = m => new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+  Object.keys(S.free).forEach(k => { if (k < mKey(todayD)) delete S.free[k]; });  // старые месяцы не копим
+  // в прошедших днях отметок не бывает: считаем только сегодня и дальше
   const freeIn = m => { const set = new Set(S.free[mKey(m)] || []); for (const d of [...set]) if (new Date(m.getFullYear(), m.getMonth(), d) < todayD) set.delete(d); return set; };
+  const putMonth = (key, set) => { if (set.size) S.free[key] = [...set].sort((a, b) => a - b); else delete S.free[key]; save(); };
   // месяц почти кончился — сразу на следующий
-  { const left = new Date(todayD.getFullYear(), todayD.getMonth() + 1, 0).getDate() - todayD.getDate(); if (left < 3 && !freeIn(curMonth()).size) mOff = 1; }
+  { const left = dim(todayD) - todayD.getDate(); if (left < 3 && !freeIn(curMonth()).size) mOff = 1; }
 
   function renderCal(dir) {
-    const m = curMonth(), sel = freeIn(m), days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate(), lead = (m.getDay() + 6) % 7;
+    const m = curMonth(), sel = freeIn(m), days = dim(m), lead = (m.getDay() + 6) % 7;
     $("mName").textContent = `${MONTHS[m.getMonth()]} ${m.getFullYear()}`;
     $("mPrev").disabled = mOff <= 0; $("mNext").disabled = mOff >= 2;
     let html = WD.map(d => `<span class="wd">${d}</span>`).join("") + "<span></span>".repeat(lead);
@@ -275,25 +271,12 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
   }
   function renderCount() {
     const n = freeIn(curMonth()).size;
-    $("count").textContent = n ? `свободно — ${plural(n, "день", "дня", "дней")}` : "Коснитесь свободных дней";
+    $("count").textContent = n ? `Свободно — ${plural(n, "день", "дня", "дней")}` : "Пока ни одного дня — коснитесь нужных";
     $("count").classList.toggle("empty", !n);
-    $("allBtn").textContent = n ? "Снять все" : "Отметить все";
+    $("chipNone").hidden = !n;
     $("shareStory").disabled = !n;
+    $("shareLbl").textContent = n ? (canShareFiles ? "Отправить в сторис" : "Скачать картинку") : "Сначала отметьте дни";
   }
-  const putMonth = (key, set) => { if (set.size) S.free[key] = [...set].sort((a, b) => a - b); else delete S.free[key]; save(); };
-  // «Отметить все» — когда свободно почти всё и проще снять занятые; «Снять все» — с возвратом
-  $("allBtn").addEventListener("click", () => {
-    const m = curMonth(), key = mKey(m), was = freeIn(m);
-    if (was.size) {
-      putMonth(key, new Set()); renderCal();
-      toast("Отметки сняты", "Вернуть", () => { putMonth(key, was); renderCal(); });
-    } else {
-      const all = new Set(), days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
-      for (let d = 1; d <= days; d++) if (new Date(m.getFullYear(), m.getMonth(), d) >= todayD) all.add(d);
-      putMonth(key, all); renderCal();
-      toast("Теперь снимите занятые дни");
-    }
-  });
   const go = d => { const n = Math.max(0, Math.min(2, mOff + d)); if (n !== mOff) { mOff = n; renderCal(d); } };
   $("mPrev").addEventListener("click", () => go(-1));
   $("mNext").addEventListener("click", () => go(1));
@@ -308,6 +291,16 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
     putMonth(key, set);
     b.classList.toggle("free", set.has(d)); b.setAttribute("aria-pressed", set.has(d));
     renderCount(); drawStory();
+  });
+  // быстрый выбор: всё, будни, выходные, сбросить — и «Вернуть», если что-то уже было отмечено
+  const PRESETS = { all: () => true, week: w => w >= 1 && w <= 5, end: w => w === 0 || w === 6, none: () => false };
+  document.querySelector(".chips").addEventListener("click", e => {
+    const b = e.target.closest("[data-set]"); if (!b) return;
+    const m = curMonth(), key = mKey(m), was = freeIn(m), ok = PRESETS[b.dataset.set], set = new Set();
+    for (let d = 1; d <= dim(m); d++) { const dt = new Date(m.getFullYear(), m.getMonth(), d); if (dt >= todayD && ok(dt.getDay())) set.add(d); }
+    putMonth(key, set); renderCal();
+    if (was.size) toast("Отметки заменены", "Вернуть", () => { putMonth(key, was); renderCal(); });
+    else if (set.size) toast("Теперь уберите занятые дни");
   });
   $("capt").value = S.caption;
   let captT; $("capt").addEventListener("input", () => { S.caption = $("capt").value; save(); clearTimeout(captT); captT = setTimeout(drawStory, 250); });
@@ -354,17 +347,13 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
     const mt = `${MONTHS[m.getMonth()]} ${m.getFullYear()}`;
     c.fillStyle = P.acTxt; c.font = F(600, 72); c.fillText(mt[0].toUpperCase() + mt.slice(1), 86, 600);
 
-    // низ: имя слева, ник справа на той же строке; не влезают рядом — ник строкой ниже
-    const name = S.name.trim(), contact = S.contact.trim(), hasFoot = !!(name || contact);
-    c.font = F(600, 44); const ctW = contact ? c.measureText(contact).width : 0;
-    c.font = F(600, 50); const nameS = name ? Math.min(50, Math.floor(50 * 900 / Math.max(c.measureText(name).width, 1))) : 50, nameW = name ? c.measureText(name).width * nameS / 50 : 0;
-    const side = !name || !contact || nameW + ctW + 48 <= 900;
-    const footY = !hasFoot ? H - 60 : side ? H - 150 : H - 210;
-    const cap = ($("capt").value || "Пишите в личку — подберём время").trim();
+    // календарь и подпись: подпись идёт сразу под календарём, весь блок слегка опущен, если остаётся место
+    const cap = ($("capt").value || DEF_CAP).trim();
     c.font = SER(44); const capLines = wrapLines(c, cap, 900);
-    const lead = (m.getDay() + 6) % 7, days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate(), rowsN = Math.ceil((lead + days) / 7);
-    const x0 = 90, cw = 900 / 7, y0 = 720;
-    const ch = Math.min(122, Math.floor((footY - 90 - 50 - 14 - (capLines.length - 1) * 60 - 110 - 20 - 70 - y0) / rowsN)), rad = Math.min(50, Math.round(ch * .42));
+    const lead = (m.getDay() + 6) % 7, days = dim(m), rowsN = Math.ceil((lead + days) / 7);
+    const x0 = 90, cw = 900 / 7, y0base = 720, capH = (capLines.length - 1) * 60;
+    const ch = Math.min(140, Math.floor((H - 260 - capH - 20 - 70 - y0base) / rowsN)), rad = Math.min(54, Math.round(ch * .4));
+    const endY = y0base + 70 + rowsN * ch + 20 + 110 + capH, y0 = y0base + Math.min(Math.round(Math.max(0, H - 150 - endY) * .45), 90);
     c.textAlign = "center"; c.font = F(500, 34); c.fillStyle = mix(P.bg, P.ink, .42);
     WD.forEach((d, i) => c.fillText(d, x0 + cw * i + cw / 2, y0));
     for (let d = 1; d <= days; d++) {
@@ -384,16 +373,6 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
     c.fillStyle = P.ink2; c.font = F(500, 36); c.fillText(sel.size ? `свободно — ${plural(sel.size, "день", "дня", "дней")}` : "отметьте свободные дни", 134, yl);
     c.fillStyle = P.ink; c.font = SER(44);
     capLines.forEach((l, i) => c.fillText(l, 90, yl + 110 + i * 60));
-    if (hasFoot) {
-      c.fillStyle = rgba(P.ink, .10); c.fillRect(90, footY - 90, 900, 2);
-      if (name) { c.fillStyle = P.ink; c.font = F(600, nameS); c.fillText(name, 90, footY); }
-      if (contact) {
-        c.fillStyle = P.acTxt; c.font = F(600, 44);
-        if (!name) c.fillText(contact, 90, footY);
-        else if (side) { c.textAlign = "right"; c.fillText(contact, 990, footY); c.textAlign = "left"; }
-        else c.fillText(contact, 90, footY + 66);
-      }
-    }
   }
   const fileName = () => `svobodnye-okna-${mKey(curMonth())}.png`;
   const download = blob => {
@@ -401,10 +380,10 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
     toast("Картинка скачана");
   };
-  // одна кнопка: на телефоне — меню «Поделиться» (там и Instagram, и «Сохранить изображение»), на компьютере без него — скачать
+  // одна кнопка: на телефоне — меню «Поделиться» (там Instagram и «Сохранить изображение»), без него — скачать
   let canShareFiles = false;
   try { canShareFiles = !!(navigator.canShare && navigator.canShare({ files: [new File(["x"], "a.png", { type: "image/png" })] })); } catch (e) {}
-  if (!canShareFiles) { $("shareLbl").textContent = "Скачать картинку"; $("shareIc").innerHTML = '<use href="#i-down"/>'; $("shareHint").hidden = true; }
+  if (!canShareFiles) { $("shareIc").innerHTML = '<use href="#i-down"/>'; $("shareHint").hidden = true; }
   $("shareStory").addEventListener("click", async () => {
     if (!freeIn(curMonth()).size) return;
     const blob = freshBlob();
@@ -413,29 +392,6 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
     try { await navigator.share({ files: [file] }); } catch (e) { if (e.name !== "AbortError") download(blob); }
   });
 
-  // ---------- настройки ----------
-  const sheet = $("sheet"), scrim = $("scrim");
-  function renderWho() { const t = [S.name.trim(), S.contact.trim()].filter(Boolean).join(" · "); $("who").textContent = t || "Отметьте дни — получите сторис"; }
-  function openSet(first) {
-    $("setH").textContent = first === true ? "Как вас подписать?" : "Настройки";
-    $("sName").value = S.name; $("sContact").value = S.contact; $("capt").value = S.caption;
-    sheet.scrollTop = 0; sheet.inert = false; sheet.classList.add("on"); scrim.classList.add("on");
-  }
-  function closeSet() { sheet.classList.remove("on"); scrim.classList.remove("on"); sheet.inert = true; document.activeElement?.blur(); renderWho(); drawStory(); }
-  [["sName", "name"], ["sContact", "contact"]].forEach(([id, k]) => $(id).addEventListener("input", e => { S[k] = e.target.value; save(); drawStory(); }));
-  // «Далее» на клавиатуре — к следующему полю, «Готово» на последнем — убрать клавиатуру
-  $("sName").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("sContact").focus(); } });
-  $("sContact").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("capt").focus(); } });
-  $("openSet").addEventListener("click", openSet);
-  $("closeSet").addEventListener("click", closeSet);
-  scrim.addEventListener("click", closeSet);
-  document.addEventListener("keydown", e => { if (e.key === "Escape" && sheet.classList.contains("on")) closeSet(); });
-  // шторку можно смахнуть вниз, как в айфоне
-  let dy0 = null, dy = 0;
-  sheet.addEventListener("touchstart", e => { dy0 = sheet.scrollTop <= 0 && !e.target.closest("input") ? e.touches[0].clientY : null; dy = 0; }, { passive: true });
-  sheet.addEventListener("touchmove", e => { if (dy0 === null) return; dy = Math.max(0, e.touches[0].clientY - dy0); if (dy > 4) { sheet.classList.add("drag"); sheet.style.transform = `translateY(${dy}px)`; } }, { passive: true });
-  sheet.addEventListener("touchend", () => { if (dy0 === null) return; sheet.classList.remove("drag"); sheet.style.transform = ""; if (dy > 90) closeSet(); dy0 = null; });
-
   let toastT;
   function toast(t, act, fn) {
     const el = $("toast"); el.textContent = t;
@@ -443,8 +399,7 @@ svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-widt
     el.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), act ? 4500 : 2200);
   }
 
-  palette(); renderWho(); renderCal(); save();
-  if (!S.name.trim() && !S.contact.trim()) setTimeout(() => openSet(true), 350);  // первый вход — сразу спросить имя
+  palette(); renderCal(); save();
 })();
 </script>
 </body>
